@@ -19,6 +19,7 @@
   },
   "homepage": "https://github.com/JohnPhamous/dev-invest-links#readme",
   "dependencies": {
+    "airtable": "^0.11.1",
     "discord.js": "^12.5.3",
     "dotenv": "^10.0.0"
   },

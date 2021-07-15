@@ -1,9 +1,18 @@
 const dotenv = require("dotenv");
 const Discord = require("discord.js");
+const Airtable = require("airtable");
 
 dotenv.config();
+const {
+  DISCORD_BOT_TOKEN,
+  AIRTABLE_API_KEY,
+  AIRTABLE_BASE_ID,
+  AIRTABLE_TABLE_NAME,
+} = process.env;
+
 const client = new Discord.Client();
-const { DISCORD_BOT_TOKEN } = process.env;
+Airtable.configure({ apiKey: AIRTABLE_API_KEY });
+const base = Airtable.base(AIRTABLE_BASE_ID);
 
 client.on("message", (message) => {
   const { content, author, createdTimestamp, channel } = message;
@@ -16,10 +25,32 @@ client.on("message", (message) => {
       const entries = urls.map((url) => ({
         url,
         sharer: username,
-        timestamp: createdTimestamp,
+        timestamp: new Date(createdTimestamp).toISOString(),
         content,
         channel: channel.name,
       }));
+
+      entries.forEach(({ channel, content, sharer, timestamp, url }) => {
+        base(AIRTABLE_TABLE_NAME).create(
+          [
+            {
+              fields: {
+                url,
+                sharer,
+                timestamp,
+                channel,
+                content,
+              },
+            },
+          ],
+          function (err) {
+            if (err) {
+              console.error(err);
+              return;
+            }
+          }
+        );
+      });
     }
   }
 });
