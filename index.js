@@ -14,6 +14,10 @@ const client = new Discord.Client();
 Airtable.configure({ apiKey: AIRTABLE_API_KEY });
 const base = Airtable.base(AIRTABLE_BASE_ID);
 
+client.once("ready", () => {
+  console.log("Listening", AIRTABLE_BASE_ID, AIRTABLE_TABLE_NAME);
+});
+
 client.on("message", (message) => {
   const { content, author, createdTimestamp, channel, guild, id } = message;
   const { username } = author;
