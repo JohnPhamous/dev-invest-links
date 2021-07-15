@@ -6,7 +6,7 @@ const client = new Discord.Client();
 const { DISCORD_BOT_TOKEN } = process.env;
 
 client.on("message", (message) => {
-  const { content, author, createdTimestamp } = message;
+  const { content, author, createdTimestamp, channel } = message;
   const { username } = author;
 
   if (content) {
@@ -18,6 +18,7 @@ client.on("message", (message) => {
         sharer: username,
         timestamp: createdTimestamp,
         content,
+        channel: channel.name,
       }));
     }
   }
