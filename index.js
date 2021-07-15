@@ -15,8 +15,9 @@ Airtable.configure({ apiKey: AIRTABLE_API_KEY });
 const base = Airtable.base(AIRTABLE_BASE_ID);
 
 client.on("message", (message) => {
-  const { content, author, createdTimestamp, channel } = message;
+  const { content, author, createdTimestamp, channel, guild, id } = message;
   const { username } = author;
+  const {id: channelId} = channel;
 
   if (content) {
     const urls = getAllUrls(content);
@@ -40,6 +41,7 @@ client.on("message", (message) => {
                 timestamp,
                 channel,
                 content,
+                permalink: getDiscordPermalink(guild.id, channelId, id)
               },
             },
           ],
@@ -72,3 +74,5 @@ const getAllUrls = (message) => {
 
   return urls.map((url) => url);
 };
+
+const getDiscordPermalink = (serverId, channelId, messageId) => `https://discord.com/channels/${serverId}/${channelId}/${messageId}`
