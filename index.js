@@ -17,7 +17,7 @@ const base = Airtable.base(AIRTABLE_BASE_ID);
 client.on("message", (message) => {
   const { content, author, createdTimestamp, channel, guild, id } = message;
   const { username } = author;
-  const {id: channelId} = channel;
+  const { id: channelId } = channel;
 
   if (content) {
     const urls = getAllUrls(content);
@@ -32,17 +32,20 @@ client.on("message", (message) => {
       }));
 
       entries.forEach(({ channel, content, sharer, timestamp, url }) => {
+        const fields = {
+          url,
+          sharer,
+          timestamp,
+          channel,
+          content,
+          permalink: getDiscordPermalink(guild.id, channelId, id),
+        };
+        console.log("writing", fields);
+
         base(AIRTABLE_TABLE_NAME).create(
           [
             {
-              fields: {
-                url,
-                sharer,
-                timestamp,
-                channel,
-                content,
-                permalink: getDiscordPermalink(guild.id, channelId, id)
-              },
+              fields,
             },
           ],
           function (err) {
@@ -75,4 +78,5 @@ const getAllUrls = (message) => {
   return urls.map((url) => url);
 };
 
-const getDiscordPermalink = (serverId, channelId, messageId) => `https://discord.com/channels/${serverId}/${channelId}/${messageId}`
+const getDiscordPermalink = (serverId, channelId, messageId) =>
+  `https://discord.com/channels/${serverId}/${channelId}/${messageId}`;
