@@ -1,6 +1,7 @@
 const dotenv = require("dotenv");
 const Discord = require("discord.js");
 const Airtable = require("airtable");
+const Twitter = require("twitter");
 
 dotenv.config();
 const {
@@ -8,17 +9,28 @@ const {
   AIRTABLE_API_KEY,
   AIRTABLE_BASE_ID,
   AIRTABLE_TABLE_NAME,
+  TWITTER_CONSUMER_KEY,
+  TWITTER_CONSUMER_SECRET,
+  TWITTER_TOKEN_KEY,
+  TWITTER_TOKEN_SECRET,
 } = process.env;
 
-const client = new Discord.Client();
+const DiscordClient = new Discord.Client();
 Airtable.configure({ apiKey: AIRTABLE_API_KEY });
 const base = Airtable.base(AIRTABLE_BASE_ID);
 
-client.once("ready", () => {
-  console.log("Listening", AIRTABLE_BASE_ID, AIRTABLE_TABLE_NAME);
+const TwitterClient = new Twitter({
+  consumer_key: TWITTER_CONSUMER_KEY,
+  consumer_secret: TWITTER_CONSUMER_SECRET,
+  access_token_key: TWITTER_TOKEN_KEY,
+  access_token_secret: TWITTER_TOKEN_SECRET,
 });
 
-client.on("message", (message) => {
+DiscordClient.once("ready", () => {
+  console.log("Listening");
+});
+
+DiscordClient.on("message", (message) => {
   const { content, author, createdTimestamp, channel, guild, id } = message;
   const { username } = author;
   const { id: channelId } = channel;
@@ -46,6 +58,8 @@ client.on("message", (message) => {
         };
         console.log("writing", fields);
 
+        sendTweet(fields);
+
         base(AIRTABLE_TABLE_NAME).create(
           [
             {
@@ -64,7 +78,7 @@ client.on("message", (message) => {
   }
 });
 
-client.login(DISCORD_BOT_TOKEN);
+DiscordClient.login(DISCORD_BOT_TOKEN);
 
 const URL_REGEX =
   /((([A-Za-z]{3,9}:(?:\/\/)?)(?:[-;:&=\+\$,\w]+@)?[A-Za-z0-9.-]+|(?:www.|[-;:&=\+\$,\w]+@)[A-Za-z0-9.-]+)((?:\/[\+~%\/.\w-_]*)?\??(?:[-\+=&;%@.\w_]*)#?(?:[.\!\/\\w]*))?)/gi;
@@ -84,3 +98,24 @@ const getAllUrls = (message) => {
 
 const getDiscordPermalink = (serverId, channelId, messageId) =>
   `https://discord.com/channels/${serverId}/${channelId}/${messageId}`;
+
+const TWITTER_MAX_TWEET_LENGTH = 280;
+
+const sendTweet = ({ url, sharer, channel, content }) => {
+  const statusPreamble = `${sharer}#${channel}`;
+  const longMessage = `${statusPreamble}: "${content}"`;
+  const shortMessage = `${statusPreamble} shared ${url}`;
+  const status =
+    longMessage.length < TWITTER_MAX_TWEET_LENGTH ? longMessage : shortMessage;
+
+  console.log("Tweeting:", status);
+  TwitterClient.post(
+    "statuses/update",
+    { status },
+    function (error, _tweet, response) {
+      if (error) {
+        console.error(error);
+      }
+    }
+  );
+};
