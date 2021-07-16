@@ -13,7 +13,7 @@ const {
   TWITTER_CONSUMER_SECRET,
   TWITTER_TOKEN_KEY,
   TWITTER_TOKEN_SECRET,
-  IS_DEV_MODE,
+  RUNTIME_MODE,
 } = process.env;
 
 const DiscordClient = new Discord.Client();
@@ -59,21 +59,23 @@ DiscordClient.on("message", (message) => {
         };
         console.log("writing", fields);
 
-        sendTweet(fields);
+        if (RUNTIME_MODE !== "dev") {
+          sendTweet(fields);
 
-        base(AIRTABLE_TABLE_NAME).create(
-          [
-            {
-              fields,
-            },
-          ],
-          function (err) {
-            if (err) {
-              console.error(err);
-              return;
+          base(AIRTABLE_TABLE_NAME).create(
+            [
+              {
+                fields,
+              },
+            ],
+            function (err) {
+              if (err) {
+                console.error(err);
+                return;
+              }
             }
-          }
-        );
+          );
+        }
       });
     }
   }
