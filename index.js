@@ -13,6 +13,7 @@ const {
   TWITTER_CONSUMER_SECRET,
   TWITTER_TOKEN_KEY,
   TWITTER_TOKEN_SECRET,
+  IS_DEV_MODE,
 } = process.env;
 
 const DiscordClient = new Discord.Client();
