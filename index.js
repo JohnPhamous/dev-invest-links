@@ -13,6 +13,7 @@ const {
   TWITTER_CONSUMER_SECRET,
   TWITTER_TOKEN_KEY,
   TWITTER_TOKEN_SECRET,
+  RUNTIME_MODE,
 } = process.env;
 
 const DiscordClient = new Discord.Client();
@@ -30,50 +31,50 @@ DiscordClient.once("ready", () => {
   console.log("Listening");
 });
 
-DiscordClient.on("message", (message) => {
-  const { content, author, createdTimestamp, channel, guild, id } = message;
-  const { username } = author;
-  const { id: channelId } = channel;
+DiscordClient.on("messageReactionAdd", (messageReaction, _user) => {
+  if (messageReaction.count === 1 && messageReaction.emoji.name === "🔖") {
+    const { content, author, createdTimestamp, channel, guild, id } =
+      messageReaction.message;
+    const { username } = author;
+    const { id: channelId } = channel;
 
-  if (content) {
-    const urls = getAllUrls(content);
+    if (content) {
+      const urls = getAllUrls(content);
 
-    if (urls.length > 0) {
-      const entries = urls.map((url) => ({
-        url,
-        sharer: username,
-        timestamp: new Date(createdTimestamp).toISOString(),
-        content,
-        channel: channel.name,
-      }));
-
-      entries.forEach(({ channel, content, sharer, timestamp, url }) => {
-        const fields = {
+      if (urls.length > 0) {
+        const entries = urls.map((url) => ({
           url,
-          sharer,
-          timestamp,
-          channel,
+          sharer: username,
+          timestamp: new Date(createdTimestamp).toISOString(),
           content,
-          permalink: getDiscordPermalink(guild.id, channelId, id),
-        };
-        console.log("writing", fields);
+          channel: channel.name,
+        }));
 
-        sendTweet(fields);
+        entries.forEach(({ channel, content, sharer, timestamp, url }) => {
+          const fields = {
+            url,
+            sharer,
+            timestamp,
+            channel,
+            content,
+            permalink: getDiscordPermalink(guild.id, channelId, id),
+          };
+          console.log("writing", fields);
 
-        base(AIRTABLE_TABLE_NAME).create(
-          [
-            {
-              fields,
-            },
-          ],
-          function (err) {
-            if (err) {
-              console.error(err);
-              return;
-            }
+          if (RUNTIME_MODE !== "dev") {
+            sendTweet(fields);
+            writeToAirtable(fields);
+          } else {
+            console.info(
+              `Not Tweeting and writing to airtable because RUNTIME_MODE=${RUNTIME_MODE}.`
+            );
           }
-        );
-      });
+          messageReaction.message.react("🐦");
+        });
+      } else {
+        console.log("No URLs found in", content);
+        messageReaction.message.react("❌");
+      }
     }
   }
 });
@@ -115,6 +116,23 @@ const sendTweet = ({ url, sharer, channel, content }) => {
     function (error, _tweet, response) {
       if (error) {
         console.error(error);
+      }
+    }
+  );
+};
+
+const writeToAirtable = (fields) => {
+  console.log("Writing to Airtable");
+  base(AIRTABLE_TABLE_NAME).create(
+    [
+      {
+        fields,
+      },
+    ],
+    function (err) {
+      if (err) {
+        console.error(err);
+        return;
       }
     }
   );
