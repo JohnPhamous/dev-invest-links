@@ -61,20 +61,7 @@ DiscordClient.on("message", (message) => {
 
         if (RUNTIME_MODE !== "dev") {
           sendTweet(fields);
-
-          base(AIRTABLE_TABLE_NAME).create(
-            [
-              {
-                fields,
-              },
-            ],
-            function (err) {
-              if (err) {
-                console.error(err);
-                return;
-              }
-            }
-          );
+          writeToAirtable(fields);
         }
       });
     }
@@ -118,6 +105,23 @@ const sendTweet = ({ url, sharer, channel, content }) => {
     function (error, _tweet, response) {
       if (error) {
         console.error(error);
+      }
+    }
+  );
+};
+
+const writeToAirtable = (fields) => {
+  console.log("Writing to Airtable");
+  base(AIRTABLE_TABLE_NAME).create(
+    [
+      {
+        fields,
+      },
+    ],
+    function (err) {
+      if (err) {
+        console.error(err);
+        return;
       }
     }
   );
